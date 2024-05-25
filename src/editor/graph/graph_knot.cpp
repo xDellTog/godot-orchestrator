@@ -63,7 +63,8 @@ void OrchestratorGraphKnot::_gui_input(const Ref<InputEvent>& p_event)
     Ref<InputEventMouseButton> mb = p_event;
     if (mb.is_valid() && mb->is_pressed())
     {
-        if (mb->get_button_index() == MOUSE_BUTTON_LEFT && mb->get_modifiers_mask().has_flag(KEY_MASK_CTRL))
+        // Shift+LMB remove a knot to the connection that can then be moved.
+        if (mb->get_button_index() == MOUSE_BUTTON_LEFT && mb->get_modifiers_mask().has_flag(KEY_MASK_SHIFT))
         {
             OrchestratorGraphEdit* parent = Object::cast_to<OrchestratorGraphEdit>(get_parent());
             if (parent)
