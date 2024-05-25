@@ -60,7 +60,6 @@ OrchestratorGraphEdit::DragContext::DragContext()
     , output_port(false)
     , dragging(false)
 {
-
 }
 
 void OrchestratorGraphEdit::DragContext::reset()
@@ -178,7 +177,7 @@ void OrchestratorGraphEdit::_notification(int p_what)
         _theme_update_timer->set_one_shot(true);
         add_child(_theme_update_timer);
 
-        #if GODOT_VERSION >= 0x040300
+#if GODOT_VERSION >= 0x040300
         _grid_pattern = memnew(OptionButton);
         _grid_pattern->add_item("Lines");
         _grid_pattern->set_item_metadata(0, GRID_PATTERN_LINES);
@@ -190,7 +189,7 @@ void OrchestratorGraphEdit::_notification(int p_what)
         get_menu_hbox()->get_child(4)->connect("toggled", callable_mp(this, &OrchestratorGraphEdit::_on_show_grid));
 
         set_grid_pattern(GRID_PATTERN_LINES);
-        #endif
+#endif
 
         get_menu_hbox()->add_child(memnew(VSeparator));
 
@@ -222,7 +221,8 @@ void OrchestratorGraphEdit::_notification(int p_what)
 
         // Wire up action menu
         _action_menu->connect("canceled", callable_mp(this, &OrchestratorGraphEdit::_on_action_menu_cancelled));
-        _action_menu->connect("action_selected", callable_mp(this, &OrchestratorGraphEdit::_on_action_menu_action_selected));
+        _action_menu->connect("action_selected",
+                              callable_mp(this, &OrchestratorGraphEdit::_on_action_menu_action_selected));
 
         // Wire up our signals
         connect("connection_from_empty", callable_mp(this, &OrchestratorGraphEdit::_on_attempt_connection_from_empty));
@@ -363,21 +363,19 @@ void OrchestratorGraphEdit::spawn_node(const Ref<OScriptNode>& p_node, const Vec
 
 void OrchestratorGraphEdit::goto_class_help(const String& p_class_name)
 {
-    #if GODOT_VERSION >= 0x040300
+#if GODOT_VERSION >= 0x040300
     _plugin->get_editor_interface()->get_script_editor()->goto_help(p_class_name);
-    #else
+#else
     _plugin->get_editor_interface()->set_main_screen_editor("Script");
     _plugin->get_editor_interface()->get_script_editor()->call("_help_class_open", p_class_name);
-    #endif
+#endif
 }
 
 void OrchestratorGraphEdit::for_each_graph_node(std::function<void(OrchestratorGraphNode*)> p_func)
 {
     for (int i = 0; i < get_child_count(); i++)
-    {
         if (OrchestratorGraphNode* node = Object::cast_to<OrchestratorGraphNode>(get_child(i)))
             p_func(node);
-    }
 }
 
 void OrchestratorGraphEdit::execute_action(const String& p_action_name)
@@ -398,16 +396,16 @@ static Vector2 get_closest_point_to_segment(const Vector2& p_point, const Vector
     real_t l2 = n.length_squared();
 
     if (l2 < 1e-20f)
-        return p_segment[0]; // Both points are the same, just give any.
+        return p_segment[0];  // Both points are the same, just give any.
 
     real_t d = n.dot(p) / l2;
 
     if (d <= 0.0f)
-        return p_segment[0]; // Before first point.
+        return p_segment[0];  // Before first point.
     else if (d >= 1.0f)
-        return p_segment[1]; // After first point.
+        return p_segment[1];  // After first point.
     else
-        return p_segment[0] + n * d; // Inside.
+        return p_segment[0] + n * d;  // Inside.
 }
 
 static float get_distance_to_segment(const Vector2& p_point, const Vector2* p_segment)
@@ -436,7 +434,8 @@ Dictionary OrchestratorGraphEdit::get_closest_connection_at_point(const Vector2&
             continue;
 
         // What is cached
-        Vector2 from_pos = source->get_output_port_position(int32_t(connection["from_port"])) + source->get_position_offset();
+        Vector2 from_pos = source->get_output_port_position(int32_t(connection["from_port"]))
+                           + source->get_position_offset();
         Vector2 to_pos = target->get_input_port_position(int32_t(connection["to_port"])) + target->get_position_offset();
 
         PackedVector2Array points = get_connection_line(from_pos * get_zoom(), to_pos * get_zoom());
@@ -454,7 +453,7 @@ Dictionary OrchestratorGraphEdit::get_closest_connection_at_point(const Vector2&
         for (int j = 0; j < points.size(); j++)
         {
             float distance = get_distance_to_segment(transformed_point, &points[j]);
-            if (distance <= get_connection_lines_thickness() * 0.5 + p_max_distance && distance< closest_distance)
+            if (distance <= get_connection_lines_thickness() * 0.5 + p_max_distance && distance < closest_distance)
             {
                 closest_distance = distance;
                 closest_connection = connection;
@@ -465,7 +464,8 @@ Dictionary OrchestratorGraphEdit::get_closest_connection_at_point(const Vector2&
 }
 #endif
 
-int OrchestratorGraphEdit::find_segment_with_closest_containing_point(const PackedVector2Array& p_array, const Vector2& p_point)
+int OrchestratorGraphEdit::find_segment_with_closest_containing_point(const PackedVector2Array& p_array,
+                                                                      const Vector2& p_point)
 {
     float min_distance = INFINITY;
     int index = -1;
@@ -504,20 +504,17 @@ void OrchestratorGraphEdit::_gui_input(const Ref<InputEvent>& p_event)
     {
         _hovered_connection = get_closest_connection_at_point(mm->get_position());
         if (!_hovered_connection.is_empty())
-        {
-            _show_drag_hint("Use Ctrl+LMB to add a knot to the connection.\n"
-                "Hover over an existing knot and pressing Ctrl+LMB will remove it.");
-        }
+            _show_drag_hint("Use Ctrl/Meta+LMB to add a knot to the connection and Shift+LMB to remove it.");
     }
 
     Ref<InputEventMouseButton> mb = p_event;
     if (mb.is_valid())
     {
+        // CTRL/Meta+LMB adds a knot to the connection that can then be moved.
         if (mb->get_button_index() == MOUSE_BUTTON_LEFT && mb->is_pressed())
         {
-            if (mb->get_modifiers_mask().has_flag(KEY_MASK_CTRL))
+            if (mb->get_modifiers_mask().has_flag(KEY_MASK_CMD_OR_CTRL))
             {
-                // CTRL+LMB adds a knot to the connection that can then be moved.
                 if (!_hovered_connection.is_empty())
                     _create_connection_knot(_hovered_connection, mb->get_position());
             }
@@ -626,7 +623,8 @@ void OrchestratorGraphEdit::_drop_data(const Vector2& p_position, const Variant&
 
             // Create context-menu handlers
             Ref<OrchestratorGraphActionHandler> get_handler(memnew(OrchestratorGraphNodeSpawnerPropertyGet(pi, path)));
-            Ref<OrchestratorGraphActionHandler> set_handler(memnew(OrchestratorGraphNodeSpawnerPropertySet(pi, path, value)));
+            Ref<OrchestratorGraphActionHandler> set_handler(
+                memnew(OrchestratorGraphNodeSpawnerPropertySet(pi, path, value)));
 
             // Create context-menu to specify variable get or set choice
             _context_menu->clear();
@@ -673,8 +671,10 @@ void OrchestratorGraphEdit::_drop_data(const Vector2& p_position, const Variant&
         else
         {
             // Create context-menu handlers
-            Ref<OrchestratorGraphActionHandler> get_handler(memnew(OrchestratorGraphNodeSpawnerVariableGet(variable_name)));
-            Ref<OrchestratorGraphActionHandler> set_handler(memnew(OrchestratorGraphNodeSpawnerVariableSet(variable_name)));
+            Ref<OrchestratorGraphActionHandler> get_handler(
+                memnew(OrchestratorGraphNodeSpawnerVariableGet(variable_name)));
+            Ref<OrchestratorGraphActionHandler> set_handler(
+                memnew(OrchestratorGraphNodeSpawnerVariableSet(variable_name)));
 
             // Create context-menu to specify variable get or set choice
             _context_menu->clear();
@@ -760,8 +760,10 @@ void OrchestratorGraphEdit::_create_connection_knot(const Dictionary& p_connecti
     if (!source || !target)
         return;
 
-    const Vector2 from_position = source->get_output_port_position(connection.from_port) + (source->get_position_offset() / get_zoom());
-    const Vector2 to_position = target->get_input_port_position(connection.to_port) + (target->get_position_offset() / get_zoom());
+    const Vector2 from_position = source->get_output_port_position(connection.from_port)
+                                  + (source->get_position_offset() / get_zoom());
+    const Vector2 to_position = target->get_input_port_position(connection.to_port)
+                                + (target->get_position_offset() / get_zoom());
 
     PackedVector2Array points;
     points.push_back(from_position);
@@ -831,7 +833,8 @@ void OrchestratorGraphEdit::_focus_node(int p_node_id, bool p_animated)
     }
 }
 
-bool OrchestratorGraphEdit::_is_node_hover_valid(const StringName& p_from, int p_from_port, const StringName& p_to, int p_to_port)
+bool OrchestratorGraphEdit::_is_node_hover_valid(const StringName& p_from, int p_from_port, const StringName& p_to,
+                                                 int p_to_port)
 {
     if (OrchestratorGraphNode* source = _get_by_name<OrchestratorGraphNode>(p_from))
     {
@@ -846,7 +849,8 @@ bool OrchestratorGraphEdit::_is_node_hover_valid(const StringName& p_from, int p
     return false;
 }
 
-PackedVector2Array OrchestratorGraphEdit::_get_connection_line(const Vector2& p_from_position, const Vector2& p_to_position) const
+PackedVector2Array OrchestratorGraphEdit::_get_connection_line(const Vector2& p_from_position,
+                                                               const Vector2& p_to_position) const
 {
     Vector2 from_position = p_from_position;
     Vector2 to_position = p_to_position;
@@ -899,15 +903,11 @@ PackedVector2Array OrchestratorGraphEdit::_get_connection_line(const Vector2& p_
 
         const PackedVector2Array knot_points = _get_connection_knot_points(c);
         if (_version.major == 4 && _version.minor < 3)
-        {
             for (const Vector2& knot_point : knot_points)
                 points.append(knot_point);
-        }
         else
-        {
             for (const Vector2& knot_point : knot_points)
                 points.append(knot_point * get_zoom());
-        }
     }
     points.push_back(p_to_position);
 
@@ -915,7 +915,7 @@ PackedVector2Array OrchestratorGraphEdit::_get_connection_line(const Vector2& p_
     PackedVector2Array curve_points;
     for (int i = 0; i < points.size() - 1; i++)
     {
-        float x_diff = (points[i].x - points[i+1].x);
+        float x_diff = (points[i].x - points[i + 1].x);
         float cp_offset = x_diff * get_connection_lines_curvature();
         if (x_diff < 0)
             cp_offset *= -1;
@@ -970,7 +970,7 @@ void OrchestratorGraphEdit::_synchronize_graph_with_script(bool p_apply_position
         if (!node.is_valid())
         {
             ERR_PRINT(vformat("Graph %s has node with id %d, but node is not found in the script metadata.",
-                _script_graph->get_graph_name(), nodes[i]));
+                              _script_graph->get_graph_name(), nodes[i]));
 
             _script_graph->remove_node(nodes[i]);
             continue;
@@ -1012,10 +1012,8 @@ void OrchestratorGraphEdit::_synchronize_graph_knots()
     // Remove all nodes from the graph.
     List<GraphElement*> removables;
     for (int i = 0; i < get_child_count(); i++)
-    {
         if (OrchestratorGraphKnot* knot = Object::cast_to<OrchestratorGraphKnot>(get_child(i)))
             removables.push_back(knot);
-    }
 
     for (GraphElement* knot : removables)
     {
@@ -1043,11 +1041,11 @@ void OrchestratorGraphEdit::_synchronize_graph_knots()
             add_child(graph_knot);
 
             graph_knot->connect("knot_position_changed", callable_mp_lambda(this, [&](const Vector2& position) {
-                _synchronize_graph_connections_with_script();
-            }));
+                                    _synchronize_graph_connections_with_script();
+                                }));
             graph_knot->connect("knot_delete_requested", callable_mp_lambda(this, [&](const String& name) {
-               _on_delete_nodes_requested(Array::make(name));
-            }));
+                                    _on_delete_nodes_requested(Array::make(name));
+                                }));
         }
     }
 }
@@ -1224,7 +1222,7 @@ void OrchestratorGraphEdit::_on_action_menu_action_selected(OrchestratorGraphAct
 }
 
 void OrchestratorGraphEdit::_on_connection(const StringName& p_from_node, int p_from_port, const StringName& p_to_node,
-                                 int p_to_port)
+                                           int p_to_port)
 {
     _drag_context.reset();
 
@@ -1243,8 +1241,8 @@ void OrchestratorGraphEdit::_on_connection(const StringName& p_from_node, int p_
     }
 }
 
-void OrchestratorGraphEdit::_on_disconnection(const StringName& p_from_node, int p_from_port, const StringName& p_to_node,
-                                    int p_to_port)
+void OrchestratorGraphEdit::_on_disconnection(const StringName& p_from_node, int p_from_port,
+                                              const StringName& p_to_node, int p_to_port)
 {
     if (OrchestratorGraphNode* source = _get_by_name<OrchestratorGraphNode>(p_from_node))
     {
@@ -1261,7 +1259,8 @@ void OrchestratorGraphEdit::_on_disconnection(const StringName& p_from_node, int
     }
 }
 
-void OrchestratorGraphEdit::_on_attempt_connection_from_empty(const StringName& p_to_node, int p_to_port, const Vector2& p_position)
+void OrchestratorGraphEdit::_on_attempt_connection_from_empty(const StringName& p_to_node, int p_to_port,
+                                                              const Vector2& p_position)
 {
     OrchestratorGraphNode* node = _get_by_name<OrchestratorGraphNode>(p_to_node);
     ERR_FAIL_COND_MSG(!node, "Unable to find graph node with name " + p_to_node);
@@ -1295,7 +1294,7 @@ void OrchestratorGraphEdit::_on_attempt_connection_from_empty(const StringName& 
 }
 
 void OrchestratorGraphEdit::_on_attempt_connection_to_empty(const StringName& p_from_node, int p_from_port,
-                                                  const Vector2& p_position)
+                                                            const Vector2& p_position)
 {
     OrchestratorGraphNode* node = _get_by_name<OrchestratorGraphNode>(p_from_node);
     ERR_FAIL_COND_MSG(!node, "Unable to find graph node with name " + p_from_node);
@@ -1367,10 +1366,8 @@ void OrchestratorGraphEdit::_on_node_selected(Node* p_node)
             {
                 const Vector<Ref<OScriptNodePin>> connections = pin->get_connections();
                 for (const Ref<OScriptNodePin>& connection : connections)
-                {
                     if (!selected_nodes.find(connection->get_owning_node()))
                         linked_nodes.push_back(connection->get_owning_node());
-                }
             }
         }
         for_each_graph_node([&](OrchestratorGraphNode* other) {
@@ -1428,10 +1425,8 @@ void OrchestratorGraphEdit::_on_node_deselected(Node* p_node)
                 {
                     const Vector<Ref<OScriptNodePin>> connections = pin->get_connections();
                     for (const Ref<OScriptNodePin>& connection : connections)
-                    {
                         if (!selected_nodes.find(connection->get_owning_node()))
                             linked_nodes.push_back(connection->get_owning_node());
-                    }
                 }
             }
             for_each_graph_node([&](OrchestratorGraphNode* other) {
@@ -1451,9 +1446,10 @@ void OrchestratorGraphEdit::_on_delete_nodes_requested(const PackedStringArray& 
         {
             if (!node->get_script_node()->can_user_delete_node())
             {
-                const String message = "Node %d with the title '%s' cannot be deleted.\n"
-                    "It may be that this node represents a function entry or some other node type that requires "
-                    "deletion via the component menu instead.";
+                const String message
+                    = "Node %d with the title '%s' cannot be deleted.\n"
+                      "It may be that this node represents a function entry or some other node type that requires "
+                      "deletion via the component menu instead.";
 
                 _confirm_window->set_initial_position(Window::WINDOW_INITIAL_POSITION_CENTER_SCREEN_WITH_MOUSE_FOCUS);
                 _confirm_window->set_text(vformat(message, node->get_script_node_id(), node->get_title().strip_edges()));
@@ -1627,7 +1623,7 @@ void OrchestratorGraphEdit::_on_inspect_script()
 
 void OrchestratorGraphEdit::_on_validate_and_build()
 {
-    if(!_script->validate_and_build())
+    if (!_script->validate_and_build())
     {
         _confirm_window->set_text("There are build failures, please check the output.");
         _confirm_window->set_title("Validation Failed");
@@ -1725,10 +1721,8 @@ void OrchestratorGraphEdit::_on_duplicate_nodes_request()
     _synchronize_graph_with_script();
 
     for (const int selected_id : selections)
-    {
         if (OrchestratorGraphNode* node = _get_node_by_id(selected_id))
             node->set_selected(true);
-    }
 }
 
 void OrchestratorGraphEdit::_on_paste_nodes_request()
@@ -1783,10 +1777,8 @@ void OrchestratorGraphEdit::_on_paste_nodes_request()
     _synchronize_graph_with_script();
 
     for (const int selected_id : selections)
-    {
         if (OrchestratorGraphNode* node = _get_node_by_id(selected_id))
             node->set_selected(true);
-    }
 }
 
 void OrchestratorGraphEdit::_on_script_changed()

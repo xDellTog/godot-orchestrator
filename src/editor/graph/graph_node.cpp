@@ -425,9 +425,9 @@ void OrchestratorGraphNode::_show_context_menu(const Vector2& p_position)
     _context_menu->add_icon_item(SceneUtils::get_editor_icon("Remove"), "Delete", CM_DELETE, KEY_DELETE);
     _context_menu->set_item_disabled(_context_menu->get_item_index(CM_DELETE), !_node->can_user_delete_node());
 
-    _context_menu->add_icon_item(SceneUtils::get_editor_icon("ActionCut"), "Cut", CM_CUT, Key(KEY_MASK_CTRL | KEY_X));
-    _context_menu->add_icon_item(SceneUtils::get_editor_icon("ActionCopy"), "Copy", CM_COPY, Key(KEY_MASK_CTRL | KEY_C));
-    _context_menu->add_icon_item(SceneUtils::get_editor_icon("Duplicate"), "Duplicate", CM_DUPLICATE, Key(KEY_MASK_CTRL | KEY_D));
+    _context_menu->add_icon_item(SceneUtils::get_editor_icon("ActionCut"), "Cut", CM_CUT, Key(KEY_MASK_CMD_OR_CTRL | KEY_X));
+    _context_menu->add_icon_item(SceneUtils::get_editor_icon("ActionCopy"), "Copy", CM_COPY, Key(KEY_MASK_CMD_OR_CTRL | KEY_C));
+    _context_menu->add_icon_item(SceneUtils::get_editor_icon("Duplicate"), "Duplicate", CM_DUPLICATE, Key(KEY_MASK_CMD_OR_CTRL | KEY_D));
     _context_menu->add_icon_item(SceneUtils::get_editor_icon("DistractionFree"), "Toggle Resizer", CM_RESIZABLE);
 
     _context_menu->add_icon_item(SceneUtils::get_editor_icon("Loop"), "Refresh Nodes", CM_REFRESH);
